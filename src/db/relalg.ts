@@ -134,7 +134,7 @@ export function queryWithReplacedOperatorsFromAst(
 
 
 
-const pegParserSql = require('./parser/grammar_sql.pegjs') as any;
+const pegParserSql = require('./parser/grammar_sql.js') as any;
 
 export function parseSQLSelect(text: string): sqlAst.rootSql {
 	return pegParserSql.parse(
