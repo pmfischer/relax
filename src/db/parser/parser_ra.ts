@@ -1,4 +1,4 @@
-import { i18n } from 'calc2/i18n';
+import { i18n } from '../../calc2/i18n';
 
 const pegParserRelalg = require('./grammar_ra.js') as any;
 

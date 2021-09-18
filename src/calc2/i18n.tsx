@@ -5,8 +5,8 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import * as i18next from 'i18next';
-import * as LanguageDetector from 'i18next-browser-languagedetector';
-import * as React from 'react';
+//import * as LanguageDetector from 'i18next-browser-languagedetector';
+//import * as React from 'react';
 import langDE from '../locales/de.json';
 import langEN from '../locales/en.json';
 import langES from '../locales/es.json';
@@ -16,7 +16,7 @@ import langPT from '../locales/pt.json';
 export type LanguageKeys = keyof typeof langEN;
 
 export const i18n = i18next
-	.use(LanguageDetector)
+	//.use(LanguageDetector)
 	.init({
 		resources: {
 			en: {
@@ -45,7 +45,7 @@ export const i18n = i18next
 export function t(key: LanguageKeys, options?: { [key: string]: string | number }): string {
 	return String(i18n.t(key, options));
 }
-
+/*
 const {
 	Provider,
 	Consumer,
@@ -53,7 +53,7 @@ const {
 
 /**
  * exposes the i18n instance
- */
+
 export const I18NProvider: React.FunctionComponent<{}> = props => {
 	return (
 		<Provider value={i18n}>
@@ -64,7 +64,7 @@ export const I18NProvider: React.FunctionComponent<{}> = props => {
 
 /**
  * translate the given id via the i18n instance of the context
- */
+ 
 export const T: React.FunctionComponent<{ id: LanguageKeys, html?: boolean }> = ({ id, html = false }) => {
 	return (
 		<Consumer>
@@ -75,4 +75,4 @@ export const T: React.FunctionComponent<{ id: LanguageKeys, html?: boolean }> = 
 			)}
 		</Consumer>
 	);
-};
+};*/
