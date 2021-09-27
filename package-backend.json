@@ -1,0 +1,14 @@
+{
+	"name": "relax-relational_algebra_calculator-backend",
+	"private": "true",
+        "version": "0.18.1a",
+        "description": "RelaX - a relational algebra calculator - database backend",
+        "author": "Peter M. Fischer based on work from Johannes Kessler",
+        "email": "peter.m.fischer@uni-a.de",
+        "license": "",
+	"main":"db/relalg.js",
+	"dependencies" : {
+		"i18next": "^11.3.3",
+		"immutable": "4.0.0-rc.12"
+	}
+}

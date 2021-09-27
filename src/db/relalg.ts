@@ -11,7 +11,7 @@ import { RANode } from './exec/RANode';
 import { relalgFromRelalgAstRoot } from './translate/relalgFromAst';
 import { replaceVariables } from './translate/replaceVariables';
 
-
+export {Relation} from './exec/Relation';
 export { parseRelalg, parseRelalgGroup } from './parser/parser_ra';
 export { relalgFromRelalgAstNode, relalgFromRelalgAstRoot, relalgFromSQLAstRoot } from './translate/relalgFromAst';
 export { replaceVariables } from './translate/replaceVariables';
