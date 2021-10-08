@@ -7,13 +7,21 @@
 import * as i18next from 'i18next';
 //import * as LanguageDetector from 'i18next-browser-languagedetector';
 //import * as React from 'react';
-import langDE from '../locales/de.json';
-import langEN from '../locales/en.json';
-import langES from '../locales/es.json';
-import langKR from '../locales/kr.json';
-import langPT from '../locales/pt.json';
 
-export type LanguageKeys = keyof typeof langEN;
+// Use old-style import to ensure correct transpilation, i
+// otherwise a ".default" is added for translationis in i18n init
+
+const langDE = require ('../locales/de.json');
+const langEN = require ('../locales/en.json');
+const langES = require ('../locales/es.json');
+const langKR = require ('../locales/kr.json');
+const langPT = require ('../locales/pt.json');
+
+// Workaround for type weaking with old-style imports
+
+import langENKey from '../locales/en.json';
+
+export type LanguageKeys = keyof typeof langENKey;
 
 export const i18n = i18next
 	//.use(LanguageDetector)
@@ -35,14 +43,14 @@ export const i18n = i18next
 				translations: langPT,
 			},
 		},
-		fallbackLng: 'en',
+		fallbackLng: 'de',
 		nsSeparator: ':',
 		keySeparator: false,
 		defaultNS: 'translations',
-		debug: true,
+		debug: false,
 	});
 
-export function t(key: LanguageKeys, options?: { [key: string]: string | number }): string {
+export function t(key: LanguageKeys, options?: { [key: string]: string | number}): string {
 	return String(i18n.t(key, options));
 }
 /*
