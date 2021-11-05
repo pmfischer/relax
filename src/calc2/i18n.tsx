@@ -11,17 +11,15 @@ import * as i18next from 'i18next';
 // Use old-style import to ensure correct transpilation, i
 // otherwise a ".default" is added for translationis in i18n init
 
-const langDE = require ('../locales/de.json');
-const langEN = require ('../locales/en.json');
-const langES = require ('../locales/es.json');
-const langKR = require ('../locales/kr.json');
-const langPT = require ('../locales/pt.json');
+const langDE = require ('../locales/de.js');
+const langEN = require ('../locales/en.js');
+const langES = require ('../locales/es.js');
+const langKR = require ('../locales/kr.js');
+const langPT = require ('../locales/pt.js');
 
-// Workaround for type weaking with old-style imports
+console.log(langDE)
 
-import langENKey from '../locales/en.json';
-
-export type LanguageKeys = keyof typeof langENKey;
+export type LanguageKeys = string
 
 export const i18n = i18next
 	//.use(LanguageDetector)
@@ -31,7 +29,7 @@ export const i18n = i18next
 				translations: langEN,
 			},
 			de: {
-				translations: langDE,
+				translations: langDE
 			},
 			es: {
 				translations: langES,
@@ -47,7 +45,7 @@ export const i18n = i18next
 		nsSeparator: ':',
 		keySeparator: false,
 		defaultNS: 'translations',
-		debug: false,
+		debug: true,
 	});
 
 export function t(key: LanguageKeys, options?: { [key: string]: string | number}): string {
