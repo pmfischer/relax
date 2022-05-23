@@ -126,6 +126,8 @@ export abstract class Join extends RANodeBinary {
 	_getResult(session: Session | undefined, doEliminateDuplicateRows: boolean) {
 		session = this._returnOrCreateSession(session);
 
+		
+
 		if (this._joinConditionEvaluator === null) {
 			throw new Error(`check not called`);
 		}
@@ -262,7 +264,7 @@ export abstract class Join extends RANodeBinary {
 		else { // right (outer) joins
 			let nullArrayLeft: null[];
 			if (createRowToAddIfNOTMatched !== null) {
-				nullArrayLeft = Join.createNullArray(targetTable.getSchema().getSize() - numColsA); // == size of new B
+				nullArrayLeft = Join.createNullArray(targetTable.getSchema().getSize() - numColsB); // == size of new B
 			}
 
 			for (let i = 0; i < numRowsB; i++) {
