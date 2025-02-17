@@ -245,6 +245,12 @@ export function loadStaticGroups() {
 		source: GroupSourceType,
 		id: string,
 	}[] = [
+			{	
+				maintainerGroup: t('calc.maintainer-groups.saarland'),
+				maintainer: '<a href="https://gist.github.com/jensdittrich">Jens Dittrich</a>',
+				source: 'local',
+				id: 'imdb_sample',
+			},
 			{
 				maintainerGroup: t('calc.maintainer-groups.ufes'),
 				maintainer: '<a href="https://github.com/rlaiola">Rodrigo Laiola Guimaraes</a>',

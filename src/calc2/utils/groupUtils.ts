@@ -9,9 +9,11 @@ import { parseRelalgGroup, relalgFromRelalgAstNode, replaceVariables } from 'db/
 import * as jQuery from 'jquery';
 import {string} from "prop-types";
 
+const ld_imdb_sample: any = require('../data/IMDB-sample.txt');
 const ld_ufes: any = require('../data/ufes.txt');
 const ld: any = require('../data/uibk.txt');
 const LOCAL_DATA: { [id: string]: string } = {
+  'imdb_sample' : ld_imdb_sample.default ? ld_imdb_sample.default : '',
   'ufes': ld_ufes.default ? ld_ufes.default : '',
   'uibk': ld.default ? ld.default : '',
 };
