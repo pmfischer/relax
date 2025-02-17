@@ -10,6 +10,7 @@ import { parseRelalg, relalgFromRelalgAstRoot, parseSQLSelect, relalgFromSQLAstR
 import { t } from 'calc2/i18n';
 import { Group } from 'calc2/store/groups';
 import { Relation } from 'db/exec/Relation';
+import { log } from 'node_modules/@types/qunit';
 
 type Props = {
 	group: Group,
@@ -42,6 +43,7 @@ export class Api extends React.Component<Props, State> {
 	}
 
 	private runQuery(mode: string, query: string) {
+		console.log("Running Query "+query);
 		try {
 			const { group } = this.props;
 			const relations: { [name: string]: Relation } = {};
