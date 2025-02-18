@@ -20,6 +20,14 @@ type Props = {
 
 type State = {};
 
+// https://stackoverflow.com/questions/30106476/using-javascripts-atob-to-decode-base64-doesnt-properly-decode-utf-8-strings
+
+function b64DecodeUnicodeA(str: string) {
+    return decodeURIComponent(Array.prototype.map.call(atob(str), function(c: string) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+    }).join(''))
+}
+
 export class Api extends React.Component<Props, State> {
 	public mode: string = ""
 	public query: string = ""
@@ -35,7 +43,7 @@ export class Api extends React.Component<Props, State> {
 		// https://github.com/sindresorhus/query-string/issues/305
 		// https://stackoverflow.com/questions/2678551/when-to-encode-space-to-plus-or-20
 		// https://stackoverflow.com/questions/3794919/replace-all-spaces-in-a-string-with
-		this.query = atob(props.params.query.split(' ').join('+'))
+		this.query = b64DecodeUnicodeA(props.params.query.split(' ').join('+'))
 	}
 
 	componentDidMount() {
@@ -43,7 +51,7 @@ export class Api extends React.Component<Props, State> {
 	}
 
 	private runQuery(mode: string, query: string) {
-		console.log("Running Query "+query);
+		//console.log("Running Query "+query);
 		try {
 			const { group } = this.props;
 			const relations: { [name: string]: Relation } = {};
