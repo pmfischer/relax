@@ -4,7 +4,6 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { faArrowAltCircleDown, faHistory, faPlayCircle, faUpload, faDownload, faCheckCircle, faTimesCircle, faPlay, faTable, faCheck, faCalculator, faCheckSquare, faFileCsv, faTruckPickup, faFileDownload, faImage } from '@fortawesome/free-solid-svg-icons';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { DropdownList } from 'calc2/components/dropdownList';
@@ -16,7 +15,6 @@ import classNames from 'classnames';
 import * as CodeMirror from 'codemirror';
 import 'codemirror/addon/hint/show-hint';
 import { RANode, RANodeBinary, RANodeUnary } from 'db/exec/RANode';
-import { executeRelalg, parseRelalg, textFromRelalgAstRoot } from 'db/relalg';
 import { forEachPreOrder } from 'db/translate/utils';
 import * as React from 'react';
 import { findDOMNode } from 'react-dom';
@@ -24,11 +22,21 @@ import { toast } from 'react-toastify';
 import { Button, Modal, ModalBody, ModalFooter, ModalHeader, Input } from 'reactstrap';
 import { HotTable } from '@handsontable/react';
 import * as ReactDOM from 'react-dom';
-import Handsontable from 'handsontable';
 import memoize from 'memoize-one';
-
 import html2canvas from 'html2canvas';
-import { data } from 'jquery';
+import { 
+	faHistory,
+	faPlayCircle,
+  faUpload,
+	faDownload,
+  faCheckCircle,
+  faTimesCircle,
+  faPlay,
+	faTable,
+	faFileDownload,
+	faImage,
+	faFileCsv  
+} from '@fortawesome/free-solid-svg-icons';
 
 require('codemirror/lib/codemirror.css');
 require('codemirror/theme/eclipse.css');
@@ -40,13 +48,132 @@ require('codemirror/addon/display/autorefresh.js');
 require('codemirror/mode/sql/sql.js');
 require('handsontable/dist/handsontable.full.css');
 
+CodeMirror.defineMode('trc', function () {
+	const keywords = ['in', 'and', 'or', 'xor', 'not', 'implies', 'iff', 'exists', 'for all'];
+	const keywordsMath = ['∈', '∃', '∀'];
+	const operators = ['←', '→', '∧', '∨', '⊻', '¬', '⇒', '⇔', '=', '≠', '≤', '≥', '<', '>'];
+	const matchAny = (
+		stream: CodeMirror.StringStream,
+		array: string[],
+		consume: boolean,
+		successorPattern = '',
+	) => {
+		for (let i = 0; i < array.length; i++) {
+			const match = (
+				!successorPattern
+					? stream.match(array[i], consume)
+					: stream.match(new RegExp(`^${array[i]}${successorPattern}`), consume)
+			);
+
+			if (match) {
+				return true;
+			}
+		}
+		return false;
+	};
+	const separators = '([\\(\\)\[\\]\{\\}, \\.\\t]|$)';
+
+	return {
+		startState: () => {
+			return {
+				inBlockComment: false,
+			};
+		},
+		token: (stream: CodeMirror.StringStream, state) => {
+			if (state.inBlockComment) {
+				if (stream.match(/.*?\*\//, true)) {
+					state.inBlockComment = false;
+				}
+				else {
+					stream.match(/.*/, true);
+				}
+				return 'comment';
+			}
+			else if (stream.match(/\/\*.*?\*\//, true)) {
+				return 'comment';
+			}
+			else if (!state.inBlockComment && stream.match(/^\/\*.*/, true)) {
+				state.inBlockComment = true;
+				return 'comment';
+			}
+
+			else if (state.inInlineRelation) {
+				if (stream.match(/.*?}/, true)) {
+					state.inInlineRelation = false;
+				}
+				else {
+					stream.match(/.*/, true);
+				}
+				return 'inlineRelation';
+			}
+			else if (stream.match(/^--[\t ]/, true)) {
+				stream.skipToEnd();
+				return 'comment';
+			}
+			else if (stream.match(/^\/\*.*?$/, true)) {
+				return 'comment';
+			}
+			else if (matchAny(stream, keywordsMath, true)) {
+				return 'keyword math'; // needed for the correct font
+			}
+			else if (matchAny(stream, keywords, true, separators)) {
+				return 'keyword';
+			}
+			else if (matchAny(stream, operators, true)) {
+				return 'operator math';
+			}
+			else if (stream.match(/^\[[0-9]+]/, true)) {
+				return 'attribute';
+			}
+			else if (stream.match(/^[0-9]+(\.[0-9]+)?/, true)) {
+				return 'number';
+			}
+			else if (stream.match(/\^'[^']*'/i, true)) {
+				return 'string';
+			}
+			else if (stream.match(/\^[a-z]+\.[a-z]*/i, true)) {
+				return 'qualified-column';
+			}
+			else if (stream.match(/^[\(\)\[]\{},]/i, true)) {
+				return 'bracket';
+			}
+			else if (stream.match(/^[a-z][a-z0-9\.]*/i, true)) {
+				return 'word';
+			}
+			else {
+				stream.next();
+				return 'else';
+			}
+		},
+	};
+});
+const RELATIONAL_ALGEBRA_SNIPPETS = [
+	{ prefix: 'pi', symbol: 'π', description: 'Projection (π)' },
+	{ prefix: 'sigma', symbol: 'σ', description: 'Selection (σ)' },
+	{ prefix: 'rho', symbol: 'ρ', description: 'Rename relation (ρ)' },
+	{ prefix: 'tau', symbol: 'τ', description: 'Order by (τ)' },
+	{ prefix: 'gamma', symbol: 'γ', description: 'Group by (γ)' },
+	{ prefix: 'intersection', symbol: '∩', description: 'Intersection (∩)' },
+	{ prefix: 'union', symbol: '∪', description: 'Union (∪)' },
+	{ prefix: 'subtraction', symbol: '−', description: 'Subtraction (−)' },
+	{ prefix: 'division', symbol: '÷', description: 'Division (÷)' },
+	{ prefix: 'crossjoin', symbol: '⨯', description: 'Cross join (⨯)' },
+	{ prefix: 'naturaljoin', symbol: '⨝', description: 'Natural join (⨝)' },
+	{ prefix: 'leftouterjoin', symbol: '⟕', description: 'Left outer join (⟕)' },
+	{ prefix: 'rightouterjoin', symbol: '⟖', description: 'Right outer join (⟖)' },
+	{ prefix: 'fullouterjoin', symbol: '⟗', description: 'Full outer join (⟗)' },
+	{ prefix: 'leftsemijoin', symbol: '⋉', description: 'Left semi join (⋉)' },
+	{ prefix: 'rightsemijoin', symbol: '⋊', description: 'Right semi join (⋊)' },
+	{ prefix: 'antijoin', symbol: '▷', description: 'Anti join (▷)' },
+];
+
 CodeMirror.defineMode('relalg', function () {
 	const keywords = [
-		'pi', 'sigma', 'rho', 'tau', '<-', '->', 'intersect', 'union', 'except', '/', '-', '\\\\', 'x', 'cross join', 'join',
+		'pi', 'sigma', 'rho', 'tau', 'gamma', '<-', '->', 'intersect', 'union', 'except', '/', '-', '\\\\', 'x', 'cross join', 'join',
 		'inner join', 'natural join', 'left join', 'right join', 'left outer join', 'right outer join',
 		'left semi join', 'right semi join', 'anti join', 'anti semi join', 'and', 'or', 'xor',
 	];
-	const keywordsMath = ['π', 'σ', 'ρ', 'τ', '←', '→', '∩', '∪', '÷', '-', '⨯', '⨝', '⟕', '⟖', '⟗', '⋉', '⋊', '▷'];
+	const keywordsMath = ['π', 'σ', 'ρ', 'τ', '←', '→', '∩', '∪', '÷', '-', '⨯', '⨝', '⟕', '⟖', '⟗', '⋉', '⋊', '▷', 'γ'];
 	const operators = ['<-', '->', '>=', '<=', '=', '∧', '∨', '⊻', '⊕', '≠', '=', '¬', '>', '<', '≥', '≤'];
 	const matchAny = (
 		stream: CodeMirror.StringStream,
@@ -151,11 +278,11 @@ CodeMirror.defineMode('relalg', function () {
 
 CodeMirror.defineMode('bagalg', function () {
 	const keywords = [
-		'delta', 'pi', 'sigma', 'rho', 'tau', '<-', '->', 'intersect', 'union', 'except', '/', '-', '\\\\', 'x', 'cross join', 'join',
+		'delta', 'pi', 'sigma', 'rho', 'tau', 'gamma', '<-', '->', 'intersect', 'union', 'except', '/', '-', '\\\\', 'x', 'cross join', 'join',
 		'inner join', 'natural join', 'left join', 'right join', 'left outer join', 'right outer join',
 		'left semi join', 'right semi join', 'anti join', 'anti semi join', 'and', 'or', 'xor',
 	];
-	const keywordsMath = ['∂', 'π', 'σ', 'ρ', 'τ', '←', '→', '∩', '∪', '÷', '-', '⨯', '⨝', '⟕', '⟖', '⟗', '⋉', '⋊', '▷'];
+	const keywordsMath = ['∂', 'π', 'σ', 'ρ', 'τ', '←', '→', '∩', '∪', '÷', '-', '⨯', '⨝', '⟕', '⟖', '⟗', '⋉', '⋊', '▷', 'γ'];
 	const operators = ['<-', '->', '>=', '<=', '=', '∧', '∨', '⊻', '⊕', '≠', '=', '¬', '>', '<', '≥', '≤'];
 	const matchAny = (
 		stream: CodeMirror.StringStream,
@@ -355,7 +482,7 @@ type Table = {
 
 
 type Props = {
-	mode: 'relalg' | 'bagalg' | 'text/x-mysql',
+	mode: 'relalg' | 'bagalg' | 'trc' | 'text/x-mysql',
 
 	/** sync, should throw exception on error */
 	execFunction(self: EditorBase, query: string, offset: CodeMirror.Position): { result: JSX.Element },
@@ -364,7 +491,7 @@ type Props = {
 	/** */
 	getHintsFunction(): string[],
 	
-	tab: 'relalg' | 'bagalg' | 'sql' | 'group',
+	tab: 'relalg' | 'bagalg' | 'trc' | 'sql' | 'group',
 
 	enableInlineRelationEditor: boolean,
 
@@ -1370,72 +1497,65 @@ export class EditorBase extends React.Component<Props, State> {
 
 	genericHint(cm: CodeMirror.Editor) {
 		const { getHintsFunction } = this.props;
-
 		const cur = cm.getDoc().getCursor();
 		const token = cm.getTokenAt(cur);
-		const getObj = (text: string, category = 'unknown') => ({
-			text,
-			displayText: text,
-			className: `hint-${category}`,
-		});
 
-		let unfiltered: CodeMirror.Hint[] = [];
+		// create snippet hints
+		const snippetHints = RELATIONAL_ALGEBRA_SNIPPETS.map(snippet => ({
+			text: snippet.symbol,
+			displayText: `${snippet.prefix} → ${snippet.symbol} - ${snippet.description}`,
+			className: 'hint-snippet',
+			from: CodeMirror.Pos(cur.line, token.start),
+			to: CodeMirror.Pos(cur.line, token.end),
+			hint: (cm: CodeMirror.Editor, _data: any, cur: CodeMirror.Hint) => {
+				if (cur.from && cur.to) {
+					cm.replaceRange(snippet.symbol, cur.from, cur.to);
+				}
+			}
+		}));
 
+		let unfiltered: CodeMirror.Hint[] = [... snippetHints];
+
+		// handle regular hint
 		if (this.hinterCache.changed === true) {
-			// recreate unfiltered hints
-			const unfilteredObj: { [key: string]: ReturnType<typeof getObj> } = {}; // use object to eliminate duplicates
-
+			const unfilteredObj: { [key: string]: CodeMirror.Hint } = {};
 			const hints = getHintsFunction ? getHintsFunction() : [];
 
-
 			// add keywords
-			for (let i = 0; i < hints.length; i++) {
-				unfilteredObj[hints[i]] = getObj(hints[i]);
-			}
-
+			hints.forEach(hintText => {
+				unfilteredObj[hintText] = {
+					text: hintText,
+					displayText: hintText,
+					className: 'hint-keyword'
+				};
+			});
 
 			// add hints from linter
-			for (let i = 0; i < this.hinterCache.hintsFromLinter.length; i++) {
-				const hintText = this.hinterCache.hintsFromLinter[i];
+			this.hinterCache.hintsFromLinter.forEach(hintText => {
+				unfilteredObj[hintText] = {
+					text: hintText,
+					displayText: hintText,
+					className: 'hint-linter'
+				};
+			});
 
-				unfilteredObj[hintText] = getObj(hintText);
-			}
-
-
-			// copy to array
-			const unfiltered: CodeMirror.Hint[] = [];
-			for (const hintText in unfilteredObj) {
-				if (!unfilteredObj.hasOwnProperty(hintText)) {
-					continue;
-				}
-
-				unfiltered.push(unfilteredObj[hintText]);
-			}
-
-			this.hinterCache.hints = unfiltered;
+			// update cache
+			this.hinterCache.hints = Object.values(unfilteredObj);
 			this.hinterCache.changed = false;
 		}
-		else {
-			unfiltered = this.hinterCache.hints;
-		}
 
+		// combine hints
+		unfiltered = [...snippetHints, ...this.hinterCache.hints];
 
 		// filter
-		let filtered: CodeMirror.Hint[] = [];
-		const tokenText = token.string;
-
-		if (tokenText.length > 0) {
-			for (let i = 0; i < unfiltered.length; i++) {
-				const kwText = unfiltered[i].text;
-				if (kwText.length > tokenText.length && kwText.indexOf(tokenText) === 0) {
-					filtered.push(unfiltered[i]);
-				}
-			}
-		}
-		else {
-			// no text => full hint list
-			filtered = unfiltered;
-		}
+		const tokenText = token.string.toLowerCase();
+		const filtered = tokenText
+			? unfiltered.filter(hint => {
+				const displayText = hint.displayText?.toLowerCase() || '';
+				const symbolText = hint.text.toLowerCase();
+				return displayText.includes(tokenText) || symbolText.includes(tokenText);
+			})
+			: unfiltered;
 
 		return {
 			list: filtered,
