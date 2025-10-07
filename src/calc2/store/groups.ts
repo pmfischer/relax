@@ -265,6 +265,13 @@ export function loadStaticGroups() {
 				source: 'local',
 				id: 'uibk',
 			},
+			{
+				maintainerGroup: t('calc.maintainer-groups.savben'),
+				maintainer: '<a href="https://github.com/gionata">Gionata Massi</a>',
+
+				source: 'local',
+				id: 'sb',
+			},
 		];
 
 	let first: boolean = true;

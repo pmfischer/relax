@@ -26,7 +26,7 @@ To get started, follow these steps:
 * Clone the repo
 * Checkout the `development` branch
 * Execute `yarn install` to install all dependencies
-* Use `yarn build` to create release build in the `dist` folder
+* Use `NODE_OPTIONS=--openssl-legacy-provider yarn build` to create release build in the `dist` folder
 * Copy the content of your `dist` folder somewhere outside of the repository
 * Checkout the branch `gh-pages`
 * Remove everything there and paste content of the former `dist` folder
@@ -138,6 +138,16 @@ it tries to load additional groups from the gits with the id _ac267b9cc810ac5f20
 So a user could publish a url like `http://example.com/?data=gist:ac267b9cc810ac5f20e2` to share 
 the group with other users.
 
+#### Known Issue: Network Access Limitations
+
+Some users have encountered difficulties accessing certain databases on the Relax page when multiple users are connected through the same network (e.g. university network, eduroam) . In these cases, users are restricted to accessing only the test database, while connections to other databases fail.
+
+- GitHub imposes rate limits on requests from the same IP address, common in shared networks like university environments.
+- As a result, GitHub may block additional requests from the same IP, restricting database access.
+
+**Solution/Workaround:**
+- **Log into GitHub:** Logging into a GitHub account while using Relax can help bypass rate limits by associating requests with individual accounts instead of a shared IP.
+- **Access from a Different Network:** Users can also avoid this issue by connecting to Relax from a network outside the university.
 
 
 ## Contributors
